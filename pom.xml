@@ -32,7 +32,7 @@
 
     <name>Apache Sling JCR ClassLoader</name>
     <description>
-        This bundle provides a cloassloader for the Apache Sling Commons
+        This bundle provides a classloader for the Apache Sling Commons
         dynamic classloader. The classloader provided supports loading
         classes from a JCR repository at configured paths. This bundle
         also implements a class writer which allows to store compiled
