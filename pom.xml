@@ -63,6 +63,10 @@
                         <Private-Package>
                             org.apache.sling.jcr.classloader.internal.*
                         </Private-Package>
+                        <!-- remove when upgrading to bnd Maven plugin -->
+                        <Provide-Capability>
+                            osgi.service;objectClass=org.apache.sling.commons.classloader.ClassLoaderWriter
+                        </Provide-Capability>
                     </instructions>
                 </configuration>
             </plugin>
