@@ -24,7 +24,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.Map;
 
 import javax.jcr.Item;
 import javax.jcr.Node;
@@ -33,23 +32,24 @@ import javax.jcr.RepositoryException;
 import javax.jcr.Session;
 import javax.jcr.SimpleCredentials;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Properties;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.ReferencePolicy;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.sling.commons.classloader.ClassLoaderWriter;
 import org.apache.sling.commons.classloader.DynamicClassLoaderManager;
 import org.apache.sling.commons.mime.MimeTypeService;
-import org.apache.sling.commons.osgi.PropertiesUtil;
 import org.apache.sling.jcr.api.SlingRepository;
 import org.apache.sling.settings.SlingSettingsService;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.component.ComponentContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.propertytypes.ServiceDescription;
+import org.osgi.service.component.propertytypes.ServiceVendor;
+import org.osgi.service.metatype.annotations.AttributeDefinition;
+import org.osgi.service.metatype.annotations.ObjectClassDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,37 +61,36 @@ import org.slf4j.LoggerFactory;
  * for clients to use for writing and reading such
  * classes and resources.
  */
-@Component(metatype=true, label="%loader.name", description="%loader.description",
-           name="org.apache.sling.jcr.classloader.internal.DynamicClassLoaderProviderImpl")
-@Service(value = ClassLoaderWriter.class, serviceFactory = true)
-@Properties({
-    @org.apache.felix.scr.annotations.Property(name="service.vendor", value="The Apache Software Foundation"),
-    @org.apache.felix.scr.annotations.Property(name="service.description", value="Repository based classloader writer")
-})
-public class ClassLoaderWriterImpl
-    implements ClassLoaderWriter {
+@Component(
+           name="org.apache.sling.jcr.classloader.internal.DynamicClassLoaderProviderImpl",
+            service = {ClassLoaderWriter.class}, servicefactory = true)
+@ServiceDescription("Repository based classloader writer")
+@ServiceVendor("The Apache Software Foundation")
+public class ClassLoaderWriterImpl implements ClassLoaderWriter {
 
     /** Logger */
     private final Logger logger = LoggerFactory.getLogger(ClassLoaderWriterImpl.class);
 
     private static final String CLASS_PATH_DEFAULT = "/var/classes";
 
-    @org.apache.felix.scr.annotations.Property(value=CLASS_PATH_DEFAULT)
-    private static final String CLASS_PATH_PROP = "classpath";
+    @ObjectClassDefinition(name="%loader.name", description="%loader.description")
+    public @interface Config {
 
-    private static final boolean APPEND_ID_DEFAULT = true;
+        @AttributeDefinition
+        String classpath() default CLASS_PATH_DEFAULT;
 
-    @org.apache.felix.scr.annotations.Property(boolValue=APPEND_ID_DEFAULT)
-    private static final String APPEND_ID_PROP = "appendId";
+        @AttributeDefinition
+        boolean appendId() default true;
+
+        @AttributeDefinition
+        String owner() default OWNER_DEFAULT;
+    }
 
     /** Node type for packages/folders. */
     private static final String NT_FOLDER = "nt:folder";
 
     /** Default class loader owner. */
     private static final String OWNER_DEFAULT = "admin";
-
-    @org.apache.felix.scr.annotations.Property(value=OWNER_DEFAULT)
-    private static final String OWNER_PROP = "owner";
 
     @Reference
     private SlingSettingsService settings;
@@ -105,11 +104,11 @@ public class ClassLoaderWriterImpl
     @Reference
     private SlingRepository repository;
 
-    @Reference(policy=ReferencePolicy.DYNAMIC, cardinality=ReferenceCardinality.OPTIONAL_UNARY)
+    @Reference(policy= ReferencePolicy.DYNAMIC, cardinality= ReferenceCardinality.OPTIONAL)
     private volatile MimeTypeService mimeTypeService;
 
     @Reference(
-            referenceInterface = DynamicClassLoaderManager.class,
+            service = DynamicClassLoaderManager.class,
             bind = "bindDynamicClassLoaderManager",
             unbind = "unbindDynamicClassLoaderManager")
     private volatile ServiceReference dynamicClassLoaderManager;
@@ -123,19 +122,19 @@ public class ClassLoaderWriterImpl
     /**
      * Activate this component.
      * @param componentContext The component context
-     * @param properties The configuration properties
+     * @param config The configuration properties
      */
     @Activate
-    protected void activate(final ComponentContext componentContext, final Map<String, Object> properties) {
-        this.classPath = PropertiesUtil.toString(properties.get(CLASS_PATH_PROP), CLASS_PATH_DEFAULT);
+    protected void activate(final ComponentContext componentContext, Config config) {
+        this.classPath = config.classpath();
         if ( this.classPath.endsWith("/") ) {
             this.classPath = this.classPath.substring(0, this.classPath.length() - 1);
         }
-        if ( PropertiesUtil.toBoolean(properties.get(APPEND_ID_PROP), APPEND_ID_DEFAULT) ) {
+        if ( config.appendId()) {
             this.classPath = this.classPath + '/' + this.settings.getSlingId();
         }
 
-        this.classLoaderOwner = PropertiesUtil.toString(properties.get(OWNER_PROP), OWNER_DEFAULT);
+        this.classLoaderOwner = config.owner();
 
         this.callerBundle = componentContext.getUsingBundle();
     }
