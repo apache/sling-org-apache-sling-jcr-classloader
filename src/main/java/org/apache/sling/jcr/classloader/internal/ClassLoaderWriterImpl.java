@@ -46,6 +46,7 @@ import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ServiceScope;
 import org.osgi.service.component.propertytypes.ServiceDescription;
 import org.osgi.service.component.propertytypes.ServiceVendor;
 import org.osgi.service.metatype.annotations.AttributeDefinition;
@@ -62,8 +63,9 @@ import org.slf4j.LoggerFactory;
  * classes and resources.
  */
 @Component(
-           name="org.apache.sling.jcr.classloader.internal.DynamicClassLoaderProviderImpl",
-            service = {ClassLoaderWriter.class}, servicefactory = true)
+        name = "org.apache.sling.jcr.classloader.internal.DynamicClassLoaderProviderImpl",
+        service = ClassLoaderWriter.class,
+        scope = ServiceScope.BUNDLE)
 @ServiceDescription("Repository based classloader writer")
 @ServiceVendor("The Apache Software Foundation")
 public class ClassLoaderWriterImpl implements ClassLoaderWriter {
